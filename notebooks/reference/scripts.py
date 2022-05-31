@@ -1,7 +1,19 @@
-"""Module for listing down additional custom functions required for the notebooks."""
-
-import pandas as pd
-
-def binned_selling_price(df):
-    """Bin the selling price column using quantiles."""
-    return pd.qcut(df["unit_price"], q=10)
+from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
+class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
+    """initialises the values"""
+    def __init__(self,add_bedrooms_per_room=True):
+        self.add_bedrooms_per_room = add_bedrooms_per_room
+        self.rooms_ix, self.bedrooms_ix, self.population_ix, self.households_ix = 3, 4, 5, 6
+    def fit(self,X,y=None):
+        return self
+    """computes rooms per household ,population per household and bed rooms per room"""
+    def transform(self,X,y=None):
+        rooms_per_household = X[:,self.rooms_ix]/X[:,self.households_ix]
+        population_per_household = X[:,self.population_ix]/X[:,self.households_ix]
+        if self.add_bedrooms_per_room:
+            bedrooms_per_room = X[:,self.bedrooms_ix]/X[:,self.rooms_ix]
+            return np.c_[X,rooms_per_household,population_per_household,
+                bedrooms_per_room]
+        else:
+            return np.c[X,rooms_per_household,population_per_household] 
