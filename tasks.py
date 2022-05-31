@@ -1,3 +1,4 @@
+import imp
 import os
 import os.path as op
 import platform
@@ -28,6 +29,11 @@ PYSPARK_ENV_FOLDER = op.join(HERE, "deploy", "pyspark")
 NOTEBOOK_FOLDER = op.join(HERE, "notebooks", "tests")
 
 _TASK_COLLECTIONS = []
+
+#---------
+#complexity measure using radon
+#---------
+
 
 # ---------
 # Utilities
@@ -89,6 +95,31 @@ def _create_root_task_collection():
     return Collection(*_TASK_COLLECTIONS)
 
 
+@task(name="check-complexity")
+def start_get_complexity(c):
+    path1 = op.join(HERE,'notebooks','reference','01_data_discovery_reg.ipynb')
+    path2 = op.join(HERE,'notebooks','reference','02_data_processing_reg.ipynb')
+    path3 = op.join(HERE,'notebooks','reference','03_model_experimenting_reg.ipynb')
+    c.run(f"radon  cc -s --include-ipynb {path1}")
+    c.run(f"radon  cc -s --include-ipynb {path2}")
+    c.run(f"radon  cc -s --include-ipynb {path3}")
+
+
+_create_task_collection("complexity-score", start_get_complexity)
+
+@task(name="cyclomatic-complexity")
+def cyclomatic_complexity(c,platform=PLATFORM,env=DEV_ENV):
+    env_name=_get_env_name(platform,env) 
+    path1 = op.join(HERE,'notebooks','reference','01_data_discovery_reg.ipynb')
+    path2 = op.join(HERE,'notebooks','reference','02_data_processing_reg.ipynb')
+    path3 = op.join(HERE,'notebooks','reference','03_model_experimenting_reg.ipynb')
+    
+    with py_env(c,env_name):
+        c.run(f"radon  cc -s --include-ipynb {path1}")
+        c.run(f"radon  cc -s --include-ipynb {path2}")
+        c.run(f"radon  cc -s --include-ipynb {path3}")
+        
+_create_task_collection("complexity", cyclomatic_complexity)
 # ---------
 # debug tasks
 # ---------
@@ -691,7 +722,7 @@ _create_task_collection(
     start_jupyterlab_pyspark,
     start_tracker_ui,
     start_docs_server,
-    start_ipython_shell,
+    start_ipython_shell
 )
 
 
